@@ -94,7 +94,24 @@ void loop() {
       }
     }
     
-    //Are we sending any data back?
+    //Are we sending any data back? 0x1 is output command
+    msg[0] = 0x1;
     
+    b = digitalRead(BUTTON1);
+    if(b != b1) {
+      msg[1] = 0;
+      msg[2] = b ? 0 : 1;
+      a_device.write(msg, 3);
+      b1 = b;
+    }
+    
+    //TODO: Analog inputs go here, no clue what I need.
+  } else {
+    //No connection.  Reset values to prevent bad things from happening.
+    analogWrite(LED1_RED, 255);
+    analogWrite(LED1_GREEN, 255);
+    analogWrite(LED1_BLUE, 255);
   }
+  
+  delay(10);
 }
