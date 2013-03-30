@@ -65,20 +65,16 @@ void setup() {
 }
 
 void loop() {
-  //There might be a lot of junk vars I don't need for my board, I'll come back to it.
   byte err;
   byte idle;
   static byte count = 0;
   byte msg[3];
-  long touchcount;
   
   //Look for a connection and go, go, go!
   if(a_device.isConnected()) {
     int len = a_device.read(msg, sizeof(msg), 1);
     int i;
     byte b;
-    uint16_t val;
-    int x, y;
     
     //Is there a message?
     if(len > 0) {
