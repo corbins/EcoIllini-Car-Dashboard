@@ -63,3 +63,38 @@ void setup() {
   
   a_device.powerOn();
 }
+
+void loop() {
+  //There might be a lot of junk vars I don't need for my board, I'll come back to it.
+  byte err;
+  byte idle;
+  static byte count = 0;
+  byte msg[3];
+  long touchcount;
+  
+  //Look for a connection and go, go, go!
+  if(a_device.isConnected()) {
+    int len = a_device.read(msg, sizeof(msg), 1);
+    int i;
+    byte b;
+    uint16_t val;
+    int x, y;
+    
+    //Is there a message?
+    if(len > 0) {
+      
+      //msg = [command, target, (byte) value]
+      if(msg[0] == 0x2) {
+        if(msg[1] == 0x0)
+          analogWrite(LED1_RED, 255 - msg[2]);
+        if(msg[1] == 0x1)
+          analogWrite(LED1_GREEN, 255 - msg[2]);
+        if(msg[1] == 0x2)
+          analogWrite(LED1_BLUE, 255 - msg[2]);
+      }
+    }
+    
+    //Are we sending any data back?
+    
+  }
+}
