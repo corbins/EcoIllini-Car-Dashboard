@@ -115,6 +115,3 @@ void loop() {
   
   delay(100);
 }
-
-//Referenced: http://jeffreysambells.com/2011/05/17/understanding-the-demokit-pde-arduino-sketch
-//Referenced: Beginning Android ADK with Arduino by Mario Bohmer
