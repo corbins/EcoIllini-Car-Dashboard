@@ -4,6 +4,8 @@
     android:versionCode="1"
     android:versionName="1.0" >
 
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/> 
+    
     <uses-sdk
         android:minSdkVersion="12"
         android:targetSdkVersion="17" />
@@ -26,6 +28,7 @@
             </intent-filter>
             <meta-data android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
                 android:resource="@xml/accessory_filter" />
+            
         </activity>
         
         <uses-library android:name="com.android.future.usb.accessory"></uses-library>

@@ -2,23 +2,22 @@
 //Test Board -- LED + Switch + potentiometer + Button
 //Developed by: Corbin Souffrant
 
-
+#include "Arduino.h"
+#include <ADK.h>
 #include <Wire.h>
-#include <Servo.h>
 #include <Max3421e.h>
-#include <Usb.h>
 
 #include <AndroidAccessory.h>
-#include <CapSense.h>
+#include <capsense.h>
 
 //TODO: I don't have my board with me, soooo no clue which pins. These are filler.
 //Set up the pin locations
-#define BUTTON1 A0
-#define POTENTIOMETER1 A1
-#define SWITCH1 1
-#define LED1_RED 2
-#define LED1_GREEN 3
-#define LED1_BLUE 4
+#define BUTTON1 46
+#define POTENTIOMETER1 A0
+#define SWITCH1 41
+#define LED1_RED 40
+#define LED1_GREEN 40
+#define LED1_BLUE 40
 
 //Identify the Accessory
 AndroidAccessory acc("Ecoillini",
@@ -98,7 +97,7 @@ void loop() {
       b1 = b;
     }
     
-    pot1 = analog_read(POTENTIOMETER1);
+    pot1 = analogRead(POTENTIOMETER1);
     potmsg[0] = 0x3; //0x3 is analog output command.
     potmsg[1] = 0x0;
     potmsg[2] = (byte) (pot1 >> 24);

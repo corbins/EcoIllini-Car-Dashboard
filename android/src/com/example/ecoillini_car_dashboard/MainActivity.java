@@ -1,9 +1,13 @@
 package com.example.ecoillini_car_dashboard;
 
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
 
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,7 +37,6 @@ public class MainActivity extends Activity implements Runnable {
 	private static final String TAG = "EcoIllini Car Dashboard";
 	
 	//Button text, permission and usb management
-	private TextView buttonStateTextView;
 	private TextView distance_text;
 	private TextView speed_text;
 	private TextView time_text;
@@ -194,6 +197,7 @@ public class MainActivity extends Activity implements Runnable {
     	//Begin accessory communication, set up the channels
     	mFileDescriptor = mUsbManager.openAccessory(accessory);
     	if(mFileDescriptor != null) {
+    		appendLog("App started");
     		mAccessory = accessory;
 			FileDescriptor fd = mFileDescriptor.getFileDescriptor();
 			mInputStream = new FileInputStream(fd);
@@ -307,6 +311,7 @@ public class MainActivity extends Activity implements Runnable {
     		switch(msg.what){
     		case MESSAGE_SPEED:
     			SpeedMsg s = (SpeedMsg) msg.obj;
+    			appendLog(s.getSpeed()+",");
     			handleSpeedMessage(s);
     			break;
     		case MESSAGE_DISTANCE:
@@ -324,10 +329,43 @@ public class MainActivity extends Activity implements Runnable {
     protected void handleSpeedMessage(SpeedMsg s){
     	speed_text.setText(""+s.getSpeed());
     }
+    //The distance was converted to an int by * 10000, so I fix that here.
     protected void handleDistanceMessage(DistanceMsg d){
-    	distance_text.setText(""+d.getDistance());
+    	DecimalFormat df = new DecimalFormat("#.##");
+    	distance_text.setText(df.format((double)d.getDistance()/10000));
     }
     protected void handleTimeMessage(TimeMsg t){
-    	time_text.setText(""+t.getTime());
+    	String time = String.format("%02d:%02d", t.getTime() / 60, t.getTime() % 60);
+    	time_text.setText(time);
+    }
+    
+    public void appendLog(String text)
+    {       
+       File logFile = new File("sdcard/log.csv");
+       if (!logFile.exists())
+       {
+          try
+          {
+             logFile.createNewFile();
+          } 
+          catch (IOException e)
+          {
+             // TODO Auto-generated catch block
+             e.printStackTrace();
+          }
+       }
+       try
+       {
+          //BufferedWriter for performance, true to set append to file flag
+          BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true)); 
+          buf.append(text);
+          buf.newLine();
+          buf.close();
+       }
+       catch (IOException e)
+       {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+       }
     }
 }

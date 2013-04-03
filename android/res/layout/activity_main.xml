@@ -14,7 +14,7 @@
         android:layout_alignParentRight="true"
         android:textColor = "@color/white"
         android:textSize = "50sp"
-        android:text="Time" />
+        android:text="-:--" />
 
     <TextView
         android:id="@+id/speed_text"
@@ -25,7 +25,7 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:textAlignment="4"
-        android:text="Speed"
+        android:text="--"
         android:textColor="@color/white"
         android:textSize="175sp" />
 
@@ -36,7 +36,7 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:textColor = "@color/white"
-        android:text="Distance"
+        android:text="-.--"
         android:textSize="50sp" />
 
     <TextView
@@ -48,6 +48,17 @@
         android:layout_alignParentRight="true"
         android:text="mph"
         android:textColor="@color/white"
-        android:textSize="25sp" />
+        android:textSize="50sp" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/distance_text"
+        android:layout_alignBottom="@+id/distance_text"
+        android:layout_toRightOf="@+id/distance_text"
+        android:text="mi" 
+        android:textColor="@color/white"
+        android:textSize="50sp"/>
 
 </RelativeLayout>
