@@ -1,116 +1,85 @@
-//Ecoillini Car Dashboard Sketch
-//Test Board -- LED + Switch + potentiometer + Button
-//Developed by: Corbin Souffrant
-
-#include "Arduino.h"
-#include <ADK.h>
-#include <Wire.h>
-#include <Max3421e.h>
+/*
+* ADK usb digitalRead
+ *
+ * TADA!
+ *
+ * (c) 2012 D. Cuartielles & A. Goransson
+ * http://arduino.cc, http://1scale1.com
+ *
+ */
 
 #include <AndroidAccessory.h>
-#include <capsense.h>
 
-//TODO: I don't have my board with me, soooo no clue which pins. These are filler.
-//Set up the pin locations
-#define BUTTON1 46
-#define POTENTIOMETER1 A0
-#define SWITCH1 41
-#define LED1_RED 40
-#define LED1_GREEN 40
-#define LED1_BLUE 40
+// accessory descriptor. It's how Arduino identifies itself to Android
+AndroidAccessory usb("Google, Inc.",
+		     "DemoKit",
+		     "DemoKit Arduino Board",
+		     "1.0",
+		     "http://www.android.com",
+		     "0000000012345678");
 
-//Identify the Accessory
-AndroidAccessory acc("Ecoillini",
-                          "Car Dashboard",
-                          "Car Dashboard Controller",
-                          "0.1",
-                          "https://github.com/corbins/EcoIllini-Car-Dashboard",
-                          "0102030212345678"); //Serial?  I think I can just throw a random value here
+// button variables
+int buttonPin = A1;
+int buttonState = 0;
+char letter = 'a';
 
-//Initial board setup.
-void setup();
-
-//IO loop
-void loop();
-
-//TODO: How to setup switch and potentiometer?
-void init_hardware() {
-  pinMode(BUTTON1, INPUT);
-  digitalWrite(BUTTON1, HIGH);
-  
-  digitalWrite(LED1_RED, 1);
-  digitalWrite(LED1_GREEN, 1);
-  digitalWrite(LED1_BLUE, 1);
-  pinMode(LED1_RED, OUTPUT);
-  pinMode(LED1_GREEN, OUTPUT);
-  pinMode(LED1_BLUE, OUTPUT);
-}
-
-//State variables for hardware
-byte b1;
-int pot1;
+// counters
+long timer = millis();
 
 void setup() {
+  // start the connection to the device over the USB host:
+  usb.begin();
   Serial.begin(115200);
   Serial.print("\r\nStart");
-  
-  init_hardware();
-  b1 = digitalRead(BUTTON1);
-  acc.powerOn();
+
+  pinMode(buttonPin, INPUT);   
 }
 
+int b = 0;
+int val = 0; //num of cycles
+int time = 0; //current time in seconds
+int speed_val = 10; //current speed in mph
+int distance = 0; //current dist. in miles
+  
 void loop() {
-  byte err;
-  byte idle;
-  static byte count = 0;
-  byte msg[3];
-  byte potmsg[6];
-  
-  //Look for a connection and go, go, go!
-  if(acc.isConnected()) {
-    int len = acc.read(msg, sizeof(msg), 1);
-    int i;
-    byte b;
+  /* Read button state */
+  buttonState = digitalRead(buttonPin);
+  uint8_t buf[9];
+
+  /* Print to usb */
+  if(millis()-timer>100) { // sending 10 times per second
+    if (usb.isConnected()) { // isConnected makes sure the USB connection is ope
+    if(val>=100) {
+      val = 0; //keep val from getting obnoxiously large, prevent chance of overflow
+              //I can't send floats over I believe, so I'm converting it to an int and fixing it on androids end
+      distance+=speed_val * 100000 / 3600;
+    }
     
-    //Is there a message?
-    if(len > 0) {
-      
-      //msg = [command, target, (byte) value]
-      if(msg[0] == 0x2) {
-        if(msg[1] == 0x0)
-          analogWrite(LED1_RED, 255 - msg[2]);
-        if(msg[1] == 0x1)
-          analogWrite(LED1_GREEN, 255 - msg[2]);
-        if(msg[1] == 0x2)
-          analogWrite(LED1_BLUE, 255 - msg[2]);
+      if(val%10==0) {
+        time++; //time is one second larger now! since ~10 cycles a second
       }
+      val++;
+
+      //buf[0] = command type, check android for reference
+      //buf[1] and buf[2] = int storage for transfer
+      buf[0] = 0x1;
+      buf[1] = speed_val>>8;
+      buf[2] = speed_val & 0xff;
+      usb.write( buf, 3);
+      buf[0] = 0x2;
+      buf[1] = (distance)>>8;
+      buf[2] = (distance) & 0xff;
+      usb.write( buf, 3);
+      buf[0] = 0x3;
+      buf[1] = (time)>>8;
+      buf[2] = (time) & 0xff;
+      usb.write( buf, 3);
     }
-    
-    //Are we sending any data back? 0x1 is output command.
-    msg[0] = 0x1;
-    
-    b = digitalRead(BUTTON1);
-    if(b != b1) {
-      msg[1] = 0;
-      msg[2] = b ? 0 : 1;
-      acc.write(msg, 3);
-      b1 = b;
-    }
-    
-    pot1 = analogRead(POTENTIOMETER1);
-    potmsg[0] = 0x3; //0x3 is analog output command.
-    potmsg[1] = 0x0;
-    potmsg[2] = (byte) (pot1 >> 24);
-    potmsg[3] = (byte) (pot1 >> 16);
-    potmsg[4] = (byte) (pot1 >> 8);
-    potmsg[5] = (byte) (pot1);
-    acc.write(potmsg, 6);
-  } else {
-    //No connection.  Reset values to prevent bad things from happening.
-    analogWrite(LED1_RED, 255);
-    analogWrite(LED1_GREEN, 255);
-    analogWrite(LED1_BLUE, 255);
+    timer = millis();
   }
-  
-  delay(100);
 }
+
+
+
+
+
