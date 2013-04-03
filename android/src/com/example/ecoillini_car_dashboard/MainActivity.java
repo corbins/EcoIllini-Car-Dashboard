@@ -263,7 +263,6 @@ public class MainActivity extends Activity implements Runnable {
 			while (i < ret) {
 				int len = ret - i;
 
-				//ALL COMMANDS ARE UNKNOWN. ZOMG!!!
 				switch (buffer[i]) {
 				case 0x1:
 						//handle the speed

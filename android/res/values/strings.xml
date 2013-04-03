@@ -4,5 +4,7 @@
     <string name="app_name">ecoillini-car-dashboard</string>
     <string name="hello_world">Hello world!</string>
     <string name="menu_settings">Settings</string>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
 
 </resources>

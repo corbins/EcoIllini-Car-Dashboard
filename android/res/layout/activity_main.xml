@@ -1,22 +1,53 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="@color/black"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity" >
 
     <TextView
+        android:id="@+id/time_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:text="@string/hello_world" />
+        android:layout_alignBaseline="@+id/distance_text"
+        android:layout_alignBottom="@+id/distance_text"
+        android:layout_alignParentRight="true"
+        android:textColor = "@color/white"
+        android:textSize = "50sp"
+        android:text="Time" />
 
-    <Button
-        android:id="@+id/toggleButtonLED"
+    <TextView
+        android:id="@+id/speed_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/time_text"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:textAlignment="4"
+        android:text="Speed"
+        android:textColor="@color/white"
+        android:textSize="175sp" />
+
+    <TextView
+        android:id="@+id/distance_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:textColor = "@color/white"
+        android:text="Distance"
+        android:textSize="50sp" />
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/speed_text"
+        android:layout_alignBottom="@+id/speed_text"
         android:layout_alignParentRight="true"
-        android:text="ToggleButton" />
+        android:text="mph"
+        android:textColor="@color/white"
+        android:textSize="25sp" />
 
 </RelativeLayout>
