@@ -27,16 +27,26 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity implements Runnable {
 
-	//Don't know if I need these, I'll remove them later probably
+	//Developed by Corbin Souffrant
+	
+	
+	//Important files:
+	//res/xml/accessory_filter.xml -- make sure it matches the arduino descriptions if any of it changes
+	//res/values/strings.xml -- strings for the app
+	//res/layout/activity_main.xml -- the activity GUI
+	//AndroidManifest.xml -- set up any app required things in here
+	//This file is the source code, duh!
+	
+	//Message constants for handler swtich
 	private static final int MESSAGE_SPEED = 1;
 	private static final int MESSAGE_DISTANCE = 2;
 	private static final int MESSAGE_TIME = 3;
 	
-	//Provide the TAG and Permission, and button tests
+	//Provide the TAG and Permission
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
 	private static final String TAG = "EcoIllini Car Dashboard";
 	
-	//Button text, permission and usb management
+	//Textviews, usb permissions
 	private TextView distance_text;
 	private TextView speed_text;
 	private TextView time_text;
@@ -50,6 +60,7 @@ public class MainActivity extends Activity implements Runnable {
 	FileInputStream mInputStream;
 	FileOutputStream mOutputStream;
 	
+	//Custom Message Object classes for handler
 	protected class SpeedMsg {
 		private int speed;
 		
@@ -128,6 +139,7 @@ public class MainActivity extends Activity implements Runnable {
         	openAccessory(mAccessory);
         }
         
+        //define widgets and layout
         setContentView(R.layout.activity_main);   
         speed_text = (TextView) findViewById(R.id.speed_text);
         distance_text = (TextView) findViewById(R.id.distance_text);
@@ -147,16 +159,15 @@ public class MainActivity extends Activity implements Runnable {
     public void onResume() {
     	super.onResume();
     	
-    	//I don't know why this intent is here D:
-    	//Intent intent = getIntent();
     	if(mInputStream != null && mOutputStream != null) {
     		return;
     	}
     	
-    	//Connect to the accessories
+    	//See if accessories are connected, connect if so.
     	UsbAccessory[] accessories = mUsbManager.getAccessoryList();
     	UsbAccessory accessory = (accessories == null ? null : accessories[0]);
 
+    	//Set up permissions if necessary
     	if(accessory != null) {
     		if(mUsbManager.hasPermission(accessory)) {
     			openAccessory(accessory);
@@ -197,6 +208,7 @@ public class MainActivity extends Activity implements Runnable {
     	//Begin accessory communication, set up the channels
     	mFileDescriptor = mUsbManager.openAccessory(accessory);
     	if(mFileDescriptor != null) {
+    		//Reconnection, mark it in the csv and set up the file streams
     		appendLog("App started");
     		mAccessory = accessory;
 			FileDescriptor fd = mFileDescriptor.getFileDescriptor();
@@ -223,7 +235,7 @@ public class MainActivity extends Activity implements Runnable {
 		}
     }
     
-    //Write the command to the arduino
+    //Write the command to the arduino, we don't use this function...
     public void sendCommand(byte command, byte target, int value) {
     	byte[] buffer = new byte[3];
 		if (value > 255)
@@ -241,6 +253,7 @@ public class MainActivity extends Activity implements Runnable {
 		}
     }
     
+    //convert the message packets to ints
     private int composeInt(byte hi, byte lo) {
     	int val = (int) hi & 0xff;
     	val*=256;
@@ -296,6 +309,7 @@ public class MainActivity extends Activity implements Runnable {
 					i+=3;
 					break;
 				default:
+					//unknown, quit.
 					Log.d(TAG, "unknown msg: " + buffer[i]);
 					i = len;
 					break;
@@ -305,6 +319,7 @@ public class MainActivity extends Activity implements Runnable {
 		}
     }
     
+    //This handles the packets, append to log if needed and then call the appropriate routines
     Handler mHandler = new Handler() {
     	@Override
     	public void handleMessage(Message msg) {
@@ -326,6 +341,7 @@ public class MainActivity extends Activity implements Runnable {
     	}
     };
     
+    //message handling routines
     protected void handleSpeedMessage(SpeedMsg s){
     	speed_text.setText(""+s.getSpeed());
     }
@@ -339,6 +355,7 @@ public class MainActivity extends Activity implements Runnable {
     	time_text.setText(time);
     }
     
+    //Appends the log with the speed every update.
     public void appendLog(String text)
     {       
        File logFile = new File("sdcard/log.csv");
