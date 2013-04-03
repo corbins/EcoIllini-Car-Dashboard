@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -13,29 +15,28 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.usb.UsbAccessory;
-import android.hardware.usb.UsbManager;
+import com.android.future.usb.UsbAccessory;
+import com.android.future.usb.UsbManager;
 import android.util.Log;
 import android.view.Menu;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 
 public class MainActivity extends Activity implements Runnable {
 
 	//Don't know if I need these, I'll remove them later probably
-	private static final byte COMMAND_BUTTON = 0x1;
-	private static final byte TARGET_BUTTON = 0x1;
-	private static final byte VALUE_ON = 0x1;
-	private static final byte VALUE_OFF = 0x0;
+	private static final int MESSAGE_SPEED = 1;
+	private static final int MESSAGE_DISTANCE = 2;
+	private static final int MESSAGE_TIME = 3;
 	
 	//Provide the TAG and Permission, and button tests
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
 	private static final String TAG = "EcoIllini Car Dashboard";
-	private static final String BUTTON_PRESSED_TEXT = "The Button is pressed!";
-	private static final String BUTTON_NOT_PRESSED_TEXT = "The Button is not pressed";
 	
 	//Button text, permission and usb management
 	private TextView buttonStateTextView;
+	private TextView distance_text;
+	private TextView speed_text;
+	private TextView time_text;
 	private UsbManager mUsbManager;
 	private PendingIntent mPermissionIntent;
 	private boolean mPermissionRequestPending;
@@ -46,6 +47,42 @@ public class MainActivity extends Activity implements Runnable {
 	FileInputStream mInputStream;
 	FileOutputStream mOutputStream;
 	
+	protected class SpeedMsg {
+		private int speed;
+		
+		public SpeedMsg(int speed) {
+			this.speed = speed;
+		}
+		
+		public int getSpeed() {
+			return speed;
+		}
+	}
+	
+	protected class DistanceMsg {
+		private int distance;
+		
+		public DistanceMsg(int distance) {
+			this.distance = distance;
+		}
+		
+		public int getDistance() {
+			return distance;
+		}
+	}
+	
+	protected class TimeMsg {
+		private int time;
+		
+		public TimeMsg(int time) {
+			this.time = time;
+		}
+		
+		public int getTime() {
+			return time;
+		}
+	}
+	
 	//Set up the accessories permissions
 	private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
 		@Override
@@ -53,21 +90,18 @@ public class MainActivity extends Activity implements Runnable {
 			String action = intent.getAction();
 			if (ACTION_USB_PERMISSION.equals(action)) {
 				synchronized (this) {
-					//UsbAccessory accessory = UsbManager.getAccessory(intent);
-					UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
+					UsbAccessory accessory = UsbManager.getAccessory(intent);
 					if (intent.getBooleanExtra(
 							UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 						openAccessory(accessory);
 					} else {
 						Log.d(TAG, "permission denied for accessory "
 								+ accessory);
-						buttonStateTextView.setText("Permission denied for accessory.");
 					}
 					mPermissionRequestPending = false;
 				}
 			} else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-				//UsbAccessory accessory = UsbManager.getAccessory(intent);
-				UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
+				UsbAccessory accessory = UsbManager.getAccessory(intent);
 				if (accessory != null && accessory.equals(mAccessory)) {
 					closeAccessory();
 				}
@@ -80,25 +114,23 @@ public class MainActivity extends Activity implements Runnable {
         super.onCreate(savedInstanceState);
         
         //Startup the broadcast receiver, get permissions, register the receiver
-        //mUsbManager = UsbManager.getInstance(this);
-        mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        mUsbManager = UsbManager.getInstance(this);
         mPermissionIntent = PendingIntent.getBroadcast(this,  0,  new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
         registerReceiver(mUsbReceiver, filter);
         
-        //TODO: Deprecated.  I hate you android.
         if(getLastNonConfigurationInstance() != null) {
         	mAccessory = (UsbAccessory) getLastNonConfigurationInstance();
         	openAccessory(mAccessory);
         }
         
-        setContentView(R.layout.activity_main);
-        buttonStateTextView = (TextView) findViewById(R.id.toggleButtonLED);
-        
+        setContentView(R.layout.activity_main);   
+        speed_text = (TextView) findViewById(R.id.speed_text);
+        distance_text = (TextView) findViewById(R.id.distance_text);
+        time_text = (TextView) findViewById(R.id.time_text);
     }
     
-    //TODO: Deprecated.  I hate you android.
     @Override
     public Object onRetainNonConfigurationInstance() {
     	if(mAccessory != null) {
@@ -113,7 +145,7 @@ public class MainActivity extends Activity implements Runnable {
     	super.onResume();
     	
     	//I don't know why this intent is here D:
-    	Intent intent = getIntent();
+    	//Intent intent = getIntent();
     	if(mInputStream != null && mOutputStream != null) {
     		return;
     	}
@@ -121,6 +153,7 @@ public class MainActivity extends Activity implements Runnable {
     	//Connect to the accessories
     	UsbAccessory[] accessories = mUsbManager.getAccessoryList();
     	UsbAccessory accessory = (accessories == null ? null : accessories[0]);
+
     	if(accessory != null) {
     		if(mUsbManager.hasPermission(accessory)) {
     			openAccessory(accessory);
@@ -134,8 +167,6 @@ public class MainActivity extends Activity implements Runnable {
     		}
     	} else {
     		Log.d(TAG, "mAccessory is null");
-			buttonStateTextView.setText("mAccessory is null.");
-
     	}
     }
     
@@ -170,11 +201,8 @@ public class MainActivity extends Activity implements Runnable {
 			Thread thread = new Thread(null, this, "EcoIllini Car Dashboard");
 			thread.start();
 			Log.d(TAG, "accessory opened");
-			buttonStateTextView.setText("Accessory opened.");
     	} else {
     		Log.d(TAG, "accessory open fail");
-			buttonStateTextView.setText("Accessory open fail");
-
     	}
     }
     
@@ -205,10 +233,15 @@ public class MainActivity extends Activity implements Runnable {
 				mOutputStream.write(buffer);
 			} catch (IOException e) {
 				Log.e(TAG, "write failed", e);
-				buttonStateTextView.setText("Write failed.");
-
 			}
 		}
+    }
+    
+    private int composeInt(byte hi, byte lo) {
+    	int val = (int) hi & 0xff;
+    	val*=256;
+    	val+=(int) lo & 0xff;
+    	return val;
     }
     
     //Runnable routine
@@ -232,15 +265,70 @@ public class MainActivity extends Activity implements Runnable {
 
 				//ALL COMMANDS ARE UNKNOWN. ZOMG!!!
 				switch (buffer[i]) {
+				case 0x1:
+						//handle the speed
+					if(len >= 3) {
+						Message m = Message.obtain(mHandler, MESSAGE_SPEED);
+						m.obj = new SpeedMsg(composeInt(buffer[i+1], buffer[i+2]));
+						mHandler.sendMessage(m);
+					}
+					i+=3;
+					break;
+				case 0x2:
+						//handle the distance
+					if(len >= 3) {
+						Message m = Message.obtain(mHandler, MESSAGE_DISTANCE);
+						m.obj = new DistanceMsg(composeInt(buffer[i+1], buffer[i+2]));
+						mHandler.sendMessage(m);
+					}
+					i+=3;
+					break;
+				case 0x3:
+						//handle the time
+					if(len >= 3) {
+						Message m = Message.obtain(mHandler, MESSAGE_TIME);
+						m.obj = new TimeMsg(composeInt(buffer[i+1], buffer[i+2]));
+						mHandler.sendMessage(m);
+					}
+					i+=3;
+					break;
 				default:
 					Log.d(TAG, "unknown msg: " + buffer[i]);
-					buttonStateTextView.setText("Unknown msg: " + buffer[i]);
-
 					i = len;
 					break;
 				}
 			}
 
 		}
+    }
+    
+    Handler mHandler = new Handler() {
+    	@Override
+    	public void handleMessage(Message msg) {
+    		switch(msg.what){
+    		case MESSAGE_SPEED:
+    			SpeedMsg s = (SpeedMsg) msg.obj;
+    			handleSpeedMessage(s);
+    			break;
+    		case MESSAGE_DISTANCE:
+    			DistanceMsg d = (DistanceMsg) msg.obj;
+    			handleDistanceMessage(d);
+    			break;
+    		case MESSAGE_TIME:
+    			TimeMsg t = (TimeMsg) msg.obj;
+    			handleTimeMessage(t);
+    			break;
+    		}
+    	}
+    };
+    
+    protected void handleSpeedMessage(SpeedMsg s){
+    	speed_text.setText(""+s.getSpeed());
+    }
+    protected void handleDistanceMessage(DistanceMsg d){
+    	distance_text.setText(""+d.getDistance());
+    }
+    protected void handleTimeMessage(TimeMsg t){
+    	time_text.setText(""+t.getTime());
     }
 }
